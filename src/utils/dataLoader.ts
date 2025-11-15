@@ -2,7 +2,7 @@ import Papa from 'papaparse';
 import { DetectionRecord, ProcessedDetection } from '../types';
 
 export const loadDetectionData = async (): Promise<ProcessedDetection[]> => {
-  const response = await fetch('/All Michigan Mammal Monitoring Detections 15July2025_Data Release.csv');
+  const response = await fetch('./All Michigan Mammal Monitoring Detections 15July2025_Data Release.csv');
   const csvText = await response.text();
   
   return new Promise((resolve, reject) => {
