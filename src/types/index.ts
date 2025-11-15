@@ -16,6 +16,8 @@ export interface DetectionRecord {
   Longitude: string;
   Region: string;
   'Array Name': string;
+  sequence_id: string;
+  deployment_id: string;
 }
 
 export interface ProcessedDetection {
@@ -29,6 +31,8 @@ export interface ProcessedDetection {
   month: number;
   region: string;
   arrayName: string;
+  sequenceId: string;
+  deploymentId: string;
 }
 
 export interface SpeciesCount {

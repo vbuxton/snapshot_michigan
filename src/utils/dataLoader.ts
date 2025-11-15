@@ -25,7 +25,9 @@ export const loadDetectionData = async (): Promise<ProcessedDetection[]> => {
                 hour: startTime.getHours(),
                 month: startTime.getMonth(),
                 region: row.Region || '',
-                arrayName: row['Array Name'] || ''
+                arrayName: row['Array Name'] || '',
+                sequenceId: row.sequence_id || '',
+                deploymentId: row.deployment_id || ''
               };
             })
             .filter(d => d.year > 0 && d.latitude !== 0 && d.longitude !== 0);
@@ -99,4 +101,63 @@ export const exportToCSV = (data: ProcessedDetection[], filename: string) => {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+};
+
+export const getSpeciesDetectionCounts = (data: ProcessedDetection[]) => {
+  const camerasBySpecies = new Map<string, Set<string>>();
+  data.forEach(d => {
+    if (!camerasBySpecies.has(d.commonName)) {
+      camerasBySpecies.set(d.commonName, new Set());
+    }
+    const locationKey = `${d.latitude},${d.longitude}`;
+    camerasBySpecies.get(d.commonName)!.add(locationKey);
+  });
+  return Array.from(camerasBySpecies.entries())
+    .map(([species, cameras]) => ({ species, count: cameras.size }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15); // Top 15 species
+};
+
+export const getSpeciesFrequency = (data: ProcessedDetection[]) => {
+  const counts = new Map<string, number>();
+  data.forEach(d => {
+    counts.set(d.commonName, (counts.get(d.commonName) || 0) + 1);
+  });
+  return Array.from(counts.entries())
+    .map(([species, count]) => ({ species, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15); // Top 15 species
+};
+
+export const getArraySpeciesTable = (data: ProcessedDetection[]) => {
+  const speciesMap = new Map<string, { totalGroupSize: number, cameras: Set<string> }>();
+  const allCameras = new Set<string>();
+  
+  data.forEach(d => {
+    const locationKey = `${d.latitude},${d.longitude}`;
+    allCameras.add(locationKey);
+    const existing = speciesMap.get(d.commonName);
+    
+    if (existing) {
+      existing.totalGroupSize += d.groupSize;
+      existing.cameras.add(locationKey);
+    } else {
+      speciesMap.set(d.commonName, {
+        totalGroupSize: d.groupSize,
+        cameras: new Set([locationKey])
+      });
+    }
+  });
+  
+  const totalCameras = allCameras.size;
+  
+  return Array.from(speciesMap.entries())
+    .map(([species, data]) => ({
+      species,
+      totalGroupSize: data.totalGroupSize,
+      distinctCameras: data.cameras.size,
+      totalCameras,
+      proportion: totalCameras > 0 ? (data.cameras.size / totalCameras * 100).toFixed(1) : '0.0'
+    }))
+    .sort((a, b) => b.totalGroupSize - a.totalGroupSize);
 };

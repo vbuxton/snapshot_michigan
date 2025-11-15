@@ -7,11 +7,16 @@ import {
   getUniqueArrayNames,
   getHourlyActivity,
   getMonthlyActivity,
-  exportToCSV
+  exportToCSV,
+  getSpeciesDetectionCounts,
+  getSpeciesFrequency,
+  getArraySpeciesTable
 } from './utils/dataLoader';
 import { 
   LineChart, 
-  Line, 
+  Line,
+  BarChart,
+  Bar,
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -22,6 +27,7 @@ import {
 import { MapView } from './components/MapView';
 import Slider from 'rc-slider';
 import html2canvas from 'html2canvas';
+import Papa from 'papaparse';
 import 'rc-slider/assets/index.css';
 import './App.css';
 
@@ -31,6 +37,8 @@ function App() {
   const [species, setSpecies] = useState<string[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>(['All']);
   const [speciesSearch, setSpeciesSearch] = useState<string>('');
+  const [regionSearch, setRegionSearch] = useState<string>('');
+  const [arrayNameSearch, setArrayNameSearch] = useState<string>('');
   const [regions, setRegions] = useState<string[]>([]);
   const [selectedRegions, setSelectedRegions] = useState<string[]>(['All']);
   const [arrayNames, setArrayNames] = useState<string[]>([]);
@@ -39,8 +47,10 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [activityView, setActivityView] = useState<'hour' | 'month'>('hour');
+  const [speciesView, setSpeciesView] = useState<'frequency' | 'cameras'>('frequency');
   
   const chartRef = useRef<HTMLDivElement>(null);
+  const speciesChartRef = useRef<HTMLDivElement>(null);
 
   const minDate = 0; // January 2017
   const maxDate = 101; // June 2025 (8 years * 12 + 6 months = 102 months, indexed 0-101)
@@ -128,37 +138,161 @@ function App() {
 
   const handleDownloadChart = async () => {
     if (!chartRef.current) return;
-    
+
     try {
-      const canvas = await html2canvas(chartRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-      });
-      
+      const canvas = await html2canvas(chartRef.current);
+      const url = canvas.toDataURL('image/png');
       const link = document.createElement('a');
-      const filename = `Michigan_Mammal_Activity_${activityView}_${selectedSpecies.join('_').replace(/\s+/g, '_')}_${dateLabels[dateRange[0]]}-${dateLabels[dateRange[1]]}.png`.replace(/\s+/g, '_');
-      link.download = filename;
-      link.href = canvas.toDataURL('image/png');
+      link.download = `activity-chart-${activityView}-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = url;
       link.click();
     } catch (error) {
       console.error('Error downloading chart:', error);
-      alert('Failed to download chart');
     }
   };
 
-  // Get unique locations for map (only show points with detections)
+  const handleDownloadSpeciesChart = async () => {
+    if (!speciesChartRef.current) return;
+
+    try {
+      const canvas = await html2canvas(speciesChartRef.current);
+      const url = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `species-chart-${speciesView}-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = url;
+      link.click();
+    } catch (error) {
+      console.error('Error downloading species chart:', error);
+    }
+  };
+
+  const handleDownloadArrayTable = () => {
+    if (arraySpeciesTable.length === 0) return;
+    
+    const csv = Papa.unparse(arraySpeciesTable);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `array-species-summary-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };  // Generate consistent colors for species
+  const getSpeciesColor = (species: string): string => {
+    const colors = [
+      '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+      '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b',
+      '#2980b9', '#8e44ad', '#27ae60', '#d35400', '#c0392b'
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < species.length; i++) {
+      hash = species.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  // Check if we should show species-specific colors
+  const showSpeciesColors = selectedSpecies.length > 0 && !selectedSpecies.includes('All');
+
+  // Get unique locations for map
   const locations = filteredData
     .filter(d => d.latitude && d.longitude)
     .reduce((acc, d) => {
       const key = `${d.latitude},${d.longitude}`;
       if (!acc.has(key)) {
-        acc.set(key, { lat: d.latitude, lng: d.longitude, count: 0 });
+        acc.set(key, { 
+          lat: d.latitude, 
+          lng: d.longitude, 
+          species: new Map<string, number>(),
+          totalCount: 0 
+        });
       }
-      acc.get(key)!.count++;
+      const location = acc.get(key)!;
+      const currentCount = location.species.get(d.commonName) || 0;
+      location.species.set(d.commonName, currentCount + (d.groupSize || 1));
+      location.totalCount += (d.groupSize || 1);
       return acc;
     }, new Map());
 
-  const mapPoints = Array.from(locations.values());
+  const mapPoints = Array.from(locations.values()).map(loc => {
+    const speciesList: { species: string; count: number; color: string; }[] = showSpeciesColors 
+      ? Array.from(loc.species.entries() as IterableIterator<[string, number]>).map(([species, count]) => ({
+          species,
+          count,
+          color: getSpeciesColor(species)
+        }))
+      : [{
+          species: 'All Species',
+          count: loc.totalCount,
+          color: '#4A90E2'
+        }];
+    
+    return {
+      lat: loc.lat,
+      lng: loc.lng,
+      species: speciesList,
+      totalCount: loc.totalCount,
+      showColors: showSpeciesColors
+    };
+  });
+
+  // Calculate total camera locations (filtered by region/array but not species)
+  const totalCameraLocations = (() => {
+    let data = allData.filter(d => d.latitude && d.longitude);
+    // Filter by region
+    if (selectedRegions.length > 0 && !selectedRegions.includes('All')) {
+      data = data.filter(d => selectedRegions.includes(d.region));
+    }
+    // Filter by array name
+    if (selectedArrayNames.length > 0 && !selectedArrayNames.includes('All')) {
+      data = data.filter(d => selectedArrayNames.includes(d.arrayName));
+    }
+    return new Set(data.map(d => `${d.latitude},${d.longitude}`)).size;
+  })();
+
+  // Calculate distinct cameras with detections (based on lat/lng in filtered data)
+  const distinctCamerasWithDetections = new Set(
+    filteredData
+      .filter(d => d.latitude && d.longitude)
+      .map(d => `${d.latitude},${d.longitude}`)
+  ).size;
+
+  // Calculate species detection counts and frequency
+  const speciesCameraCounts = getSpeciesDetectionCounts(filteredData);
+  const speciesFrequencyCounts = getSpeciesFrequency(filteredData);
+  
+  // Data for species chart based on current view
+  const speciesChartData = speciesView === 'frequency' ? speciesFrequencyCounts : speciesCameraCounts;
+  
+  // Calculate array species table if an array is selected
+  // For the table, we need data filtered by array/region/date but NOT by species
+  const showArrayTable = !selectedArrayNames.includes('All') && selectedArrayNames.length > 0;
+  const arrayFilteredData = showArrayTable ? (() => {
+    let data = [...allData];
+    // Filter by region
+    if (selectedRegions.length > 0 && !selectedRegions.includes('All')) {
+      data = data.filter(d => selectedRegions.includes(d.region));
+    }
+    // Filter by array name
+    if (selectedArrayNames.length > 0 && !selectedArrayNames.includes('All')) {
+      data = data.filter(d => selectedArrayNames.includes(d.arrayName));
+    }
+    // Filter by date range
+    data = data.filter(d => {
+      if (!d.startTime) return false;
+      const date = new Date(d.startTime);
+      if (isNaN(date.getTime())) return false;
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const monthIndex = (year - 2017) * 12 + month;
+      return monthIndex >= dateRange[0] && monthIndex <= dateRange[1];
+    });
+    return data;
+  })() : [];
+  const arraySpeciesTable = showArrayTable ? getArraySpeciesTable(arrayFilteredData) : [];
 
   if (loading) {
     return (
@@ -232,7 +366,12 @@ function App() {
         <div className="summary-card">
           <div className="summary-card-icon">📷</div>
           <div className="summary-card-label">Camera Locations</div>
-          <div className="summary-card-value">{mapPoints.length}</div>
+          <div className="summary-card-value">{totalCameraLocations}</div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-card-icon">📹</div>
+          <div className="summary-card-label">Cameras with Detections</div>
+          <div className="summary-card-value">{distinctCamerasWithDetections}</div>
         </div>
       </div>
 
@@ -288,9 +427,17 @@ function App() {
             </div>
 
             <div className="filter-section">
-              <label className="filter-label" htmlFor="region-select">
+              <label className="filter-label" htmlFor="region-search">
                 Region
               </label>
+              <input
+                id="region-search"
+                type="text"
+                className="species-search-input"
+                placeholder="Search regions..."
+                value={regionSearch}
+                onChange={(e) => setRegionSearch(e.target.value)}
+              />
               <div className="species-select-container">
                 <select
                   id="region-select"
@@ -303,16 +450,21 @@ function App() {
                     setSelectedRegions(options.length > 0 ? options : ['All']);
                   }}
                 >
-                  {regions.map((region) => (
-                    <option key={region} value={region}>
-                      {region}
-                    </option>
-                  ))}
+                  {regions
+                    .filter(region => region.toLowerCase().includes(regionSearch.toLowerCase()))
+                    .map((region) => (
+                      <option key={region} value={region}>
+                        {region}
+                      </option>
+                    ))}
                 </select>
               </div>
               <button 
                 className="clear-species-btn"
-                onClick={() => setSelectedRegions(['All'])}
+                onClick={() => {
+                  setSelectedRegions(['All']);
+                  setRegionSearch('');
+                }}
               >
                 Clear Selection
               </button>
@@ -320,9 +472,17 @@ function App() {
             </div>
 
             <div className="filter-section">
-              <label className="filter-label" htmlFor="array-select">
+              <label className="filter-label" htmlFor="array-search">
                 Array Name
               </label>
+              <input
+                id="array-search"
+                type="text"
+                className="species-search-input"
+                placeholder="Search arrays..."
+                value={arrayNameSearch}
+                onChange={(e) => setArrayNameSearch(e.target.value)}
+              />
               <div className="species-select-container">
                 <select
                   id="array-select"
@@ -335,16 +495,21 @@ function App() {
                     setSelectedArrayNames(options.length > 0 ? options : ['All']);
                   }}
                 >
-                  {arrayNames.map((arrayName) => (
-                    <option key={arrayName} value={arrayName}>
-                      {arrayName}
-                    </option>
-                  ))}
+                  {arrayNames
+                    .filter(arrayName => arrayName.toLowerCase().includes(arrayNameSearch.toLowerCase()))
+                    .map((arrayName) => (
+                      <option key={arrayName} value={arrayName}>
+                        {arrayName}
+                      </option>
+                    ))}
                 </select>
               </div>
               <button 
                 className="clear-species-btn"
-                onClick={() => setSelectedArrayNames(['All'])}
+                onClick={() => {
+                  setSelectedArrayNames(['All']);
+                  setArrayNameSearch('');
+                }}
               >
                 Clear Selection
               </button>
@@ -412,7 +577,7 @@ function App() {
               <h2 className="section-title">📍 Detection Map</h2>
             </div>
             <div className="detection-map-container">
-              <MapView points={mapPoints} selectedSpecies={selectedSpecies.join(', ')} />
+              <MapView points={mapPoints} />
             </div>
           </section>
 
@@ -485,6 +650,117 @@ function App() {
               </p>
             </div>
           </section>
+
+          {/* Species Detection Chart */}
+          <section className="dashboard-section">
+            <div className="section-header">
+              <h2 className="section-title">🏆 {speciesView === 'frequency' ? 'Most Frequently Detected Species' : 'Species by Camera Coverage'}</h2>
+              <div className="header-actions">
+                <div className="activity-toggle">
+                  <button
+                    className={`toggle-btn ${speciesView === 'frequency' ? 'active' : ''}`}
+                    onClick={() => setSpeciesView('frequency')}
+                  >
+                    by Detections
+                  </button>
+                  <button
+                    className={`toggle-btn ${speciesView === 'cameras' ? 'active' : ''}`}
+                    onClick={() => setSpeciesView('cameras')}
+                  >
+                    by Cameras
+                  </button>
+                </div>
+                <button onClick={handleDownloadSpeciesChart} className="download-chart-btn">
+                  ⬇ Download Chart
+                </button>
+              </div>
+            </div>
+
+            <div className="chart-container" ref={speciesChartRef}>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={speciesChartData} margin={{ top: 20, right: 30, left: 70, bottom: 80 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis 
+                    dataKey="species" 
+                    stroke="#666"
+                    angle={-45}
+                    textAnchor="end"
+                    height={100}
+                    style={{ fontSize: '11px' }}
+                  />
+                  <YAxis 
+                    stroke="#666"
+                    style={{ fontSize: '12px' }}
+                    label={{ 
+                      value: speciesView === 'frequency' ? 'Detections' : 'Distinct Cameras', 
+                      angle: -90, 
+                      position: 'insideLeft' 
+                    }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: 'white', 
+                      border: '2px solid #4A90E2',
+                      borderRadius: '8px'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="count" 
+                    fill={speciesView === 'frequency' ? '#4A90E2' : '#2ECC71'}
+                    name={speciesView === 'frequency' ? 'Detection Count' : 'Distinct Cameras'}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="chart-description">
+              <p>
+                {speciesView === 'frequency'
+                  ? 'This chart shows the species with the most individual detection events. Each bar represents the count of separate detections for that species.'
+                  : 'This chart shows species ranked by the number of distinct cameras where they were detected. More cameras indicates wider distribution across the study area.'}
+              </p>
+            </div>
+          </section>
+
+          {/* Array Species Table */}
+          {showArrayTable && (
+            <section className="dashboard-section">
+              <div className="section-header">
+                <h2 className="section-title">📋 Array Species Summary</h2>
+                <button onClick={handleDownloadArrayTable} className="download-chart-btn">
+                  ⬇ Download Table
+                </button>
+              </div>
+              <div className="table-container">
+                <table className="species-table">
+                  <thead>
+                    <tr>
+                      <th>Species</th>
+                      <th>Total Detections</th>
+                      <th>Distinct Cameras</th>
+                      <th>Total Cameras in Array</th>
+                      <th>Proportion (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {arraySpeciesTable.map((row) => (
+                      <tr key={row.species}>
+                        <td>{row.species}</td>
+                        <td>{row.totalGroupSize}</td>
+                        <td>{row.distinctCameras}</td>
+                        <td>{row.totalCameras}</td>
+                        <td>{row.proportion}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="chart-description">
+                <p>
+                  This table summarizes species detected in the selected array(s), showing total group size, number of distinct cameras where detected, and the proportion of cameras in the array where the species was observed.
+                </p>
+              </div>
+            </section>
+          )}
         </main>
       </div>
 
