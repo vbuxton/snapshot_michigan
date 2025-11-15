@@ -14,6 +14,8 @@ export interface DetectionRecord {
   sex: string;
   Latitude: string;
   Longitude: string;
+  Region: string;
+  'Array Name': string;
 }
 
 export interface ProcessedDetection {
@@ -25,6 +27,8 @@ export interface ProcessedDetection {
   longitude: number;
   hour: number;
   month: number;
+  region: string;
+  arrayName: string;
 }
 
 export interface SpeciesCount {

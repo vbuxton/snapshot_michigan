@@ -23,7 +23,9 @@ export const loadDetectionData = async (): Promise<ProcessedDetection[]> => {
                 latitude: parseFloat(row.Latitude) || 0,
                 longitude: parseFloat(row.Longitude) || 0,
                 hour: startTime.getHours(),
-                month: startTime.getMonth()
+                month: startTime.getMonth(),
+                region: row.Region || '',
+                arrayName: row['Array Name'] || ''
               };
             })
             .filter(d => d.year > 0 && d.latitude !== 0 && d.longitude !== 0);
@@ -41,6 +43,16 @@ export const loadDetectionData = async (): Promise<ProcessedDetection[]> => {
 export const getUniqueSpecies = (data: ProcessedDetection[]): string[] => {
   const species = new Set(data.map(d => d.commonName));
   return Array.from(species).sort();
+};
+
+export const getUniqueRegions = (data: ProcessedDetection[]): string[] => {
+  const regions = new Set(data.map(d => d.region).filter(r => r));
+  return Array.from(regions).sort();
+};
+
+export const getUniqueArrayNames = (data: ProcessedDetection[]): string[] => {
+  const arrayNames = new Set(data.map(d => d.arrayName).filter(a => a));
+  return Array.from(arrayNames).sort();
 };
 
 export const filterBySpecies = (data: ProcessedDetection[], species: string): ProcessedDetection[] => {

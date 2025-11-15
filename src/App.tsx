@@ -3,6 +3,8 @@ import { ProcessedDetection } from './types';
 import { 
   loadDetectionData, 
   getUniqueSpecies,
+  getUniqueRegions,
+  getUniqueArrayNames,
   getHourlyActivity,
   getMonthlyActivity,
   exportToCSV
@@ -29,6 +31,10 @@ function App() {
   const [species, setSpecies] = useState<string[]>([]);
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>(['All']);
   const [speciesSearch, setSpeciesSearch] = useState<string>('');
+  const [regions, setRegions] = useState<string[]>([]);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(['All']);
+  const [arrayNames, setArrayNames] = useState<string[]>([]);
+  const [selectedArrayNames, setSelectedArrayNames] = useState<string[]>(['All']);
   const [dateRange, setDateRange] = useState<[number, number]>([0, 101]); // Jan 2017 to Jun 2025
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -58,6 +64,10 @@ function App() {
         setAllData(data);
         const uniqueSpecies = getUniqueSpecies(data);
         setSpecies(['All', ...uniqueSpecies]);
+        const uniqueRegions = getUniqueRegions(data);
+        setRegions(['All', ...uniqueRegions]);
+        const uniqueArrayNames = getUniqueArrayNames(data);
+        setArrayNames(['All', ...uniqueArrayNames]);
         setLoading(false);
       })
       .catch(err => {
@@ -72,6 +82,14 @@ function App() {
     if (selectedSpecies.length > 0 && !selectedSpecies.includes('All')) {
       data = data.filter(d => selectedSpecies.includes(d.commonName));
     }
+    // Filter by region
+    if (selectedRegions.length > 0 && !selectedRegions.includes('All')) {
+      data = data.filter(d => selectedRegions.includes(d.region));
+    }
+    // Filter by array name
+    if (selectedArrayNames.length > 0 && !selectedArrayNames.includes('All')) {
+      data = data.filter(d => selectedArrayNames.includes(d.arrayName));
+    }
     // Filter by month range (0-101 = Jan 2017 to Jun 2025)
     data = data.filter(d => {
       if (!d.startTime) return false;
@@ -83,7 +101,7 @@ function App() {
       return monthIndex >= dateRange[0] && monthIndex <= dateRange[1];
     });
     setFilteredData(data);
-  }, [allData, selectedSpecies, dateRange]);
+  }, [allData, selectedSpecies, selectedRegions, selectedArrayNames, dateRange]);
 
   const hourlyData = getHourlyActivity(filteredData);
   const monthlyData = getMonthlyActivity(filteredData);
@@ -261,6 +279,70 @@ function App() {
                   setSelectedSpecies(['All']);
                   setSpeciesSearch('');
                 }}
+              >
+                Clear Selection
+              </button>
+              <p className="filter-hint">Hold Ctrl/Cmd to select multiple</p>
+            </div>
+
+            <div className="filter-section">
+              <label className="filter-label" htmlFor="region-select">
+                Region
+              </label>
+              <div className="species-select-container">
+                <select
+                  id="region-select"
+                  className="filter-select species-multiselect"
+                  multiple
+                  size={6}
+                  value={selectedRegions}
+                  onChange={(e) => {
+                    const options = Array.from(e.target.selectedOptions, option => option.value);
+                    setSelectedRegions(options.length > 0 ? options : ['All']);
+                  }}
+                >
+                  {regions.map((region) => (
+                    <option key={region} value={region}>
+                      {region}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button 
+                className="clear-species-btn"
+                onClick={() => setSelectedRegions(['All'])}
+              >
+                Clear Selection
+              </button>
+              <p className="filter-hint">Hold Ctrl/Cmd to select multiple</p>
+            </div>
+
+            <div className="filter-section">
+              <label className="filter-label" htmlFor="array-select">
+                Array Name
+              </label>
+              <div className="species-select-container">
+                <select
+                  id="array-select"
+                  className="filter-select species-multiselect"
+                  multiple
+                  size={6}
+                  value={selectedArrayNames}
+                  onChange={(e) => {
+                    const options = Array.from(e.target.selectedOptions, option => option.value);
+                    setSelectedArrayNames(options.length > 0 ? options : ['All']);
+                  }}
+                >
+                  {arrayNames.map((arrayName) => (
+                    <option key={arrayName} value={arrayName}>
+                      {arrayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button 
+                className="clear-species-btn"
+                onClick={() => setSelectedArrayNames(['All'])}
               >
                 Clear Selection
               </button>
