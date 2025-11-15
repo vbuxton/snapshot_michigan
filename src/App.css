@@ -33,6 +33,28 @@ body {
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.header-logo {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+}
+
+.header-logo-left {
+  flex-shrink: 0;
+}
+
+.header-logo-right {
+  flex-shrink: 0;
+}
+
+.header-text {
+  flex: 1;
   text-align: center;
 }
 
