@@ -23,7 +23,6 @@ body {
 
 /* Header */
 .app-header {
-  background-image: url('/snapshot_michigan/photos-header.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -769,9 +768,43 @@ body {
   color: #666;
 }
 
+/* Footer Bar */
+.app-footer-bar {
+  background: #18453B;
+  color: white;
+  padding: 8px 0;
+  margin-top: auto;
+  border-top: 1px solid #0f362d;
+}
+
+.footer-bar-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.footer-contact {
+  color: #d4f1e6;
+}
+
+.footer-credit {
+  color: #d4f1e6;
+}
+
 /* Mobile-specific overrides - must come last */
 @media (max-width: 768px) {
   .summary-cards {
     grid-template-columns: 1fr !important;
+  }
+
+  .footer-bar-content {
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+    font-size: 11px;
   }
 }

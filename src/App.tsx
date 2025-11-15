@@ -65,8 +65,10 @@ function App() {
         const uniqueSpecies = getUniqueSpecies(data);
         setSpecies(['All', ...uniqueSpecies]);
         const uniqueRegions = getUniqueRegions(data);
+        console.log('Unique regions:', uniqueRegions);
         setRegions(['All', ...uniqueRegions]);
         const uniqueArrayNames = getUniqueArrayNames(data);
+        console.log('Unique array names:', uniqueArrayNames);
         setArrayNames(['All', ...uniqueArrayNames]);
         setLoading(false);
       })
@@ -161,7 +163,7 @@ function App() {
   if (loading) {
     return (
       <div className="app">
-        <header className="app-header">
+        <header className="app-header" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}photos-header.jpg)` }}>
           <div className="header-content">
             <h1>Michigan Mammal Monitoring Project</h1>
             <p>Wildlife Camera Trap Detection Dashboard</p>
@@ -178,7 +180,7 @@ function App() {
   if (error) {
     return (
       <div className="app">
-        <header className="app-header">
+        <header className="app-header" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}photos-header.jpg)` }}>
           <div className="header-content">
             <h1>Michigan Mammal Monitoring Project</h1>
             <p>Wildlife Camera Trap Detection Dashboard</p>
@@ -193,7 +195,7 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
+      <header className="app-header" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}photos-header.jpg)` }}>
         <div className="header-content">
           <h1>Michigan Mammal Monitoring Project</h1>
         </div>
@@ -485,6 +487,14 @@ function App() {
           </section>
         </main>
       </div>
+
+      {/* Footer */}
+      <footer className="app-footer-bar">
+        <div className="footer-bar-content">
+          <span className="footer-contact">For questions, contact Brett DeGregorio at degreg12@msu.edu</span>
+          <span className="footer-credit">Application design by Valerie Buxton</span>
+        </div>
+      </footer>
     </div>
   );
 }
