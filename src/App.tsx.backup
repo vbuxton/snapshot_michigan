@@ -1,0 +1,234 @@
+import { useState, useEffect } from 'react';
+import { ProcessedDetection } from './types';
+import { 
+  loadDetectionData, 
+  getUniqueSpecies, 
+  filterBySpecies, 
+  filterByDateRange,
+  getHourlyActivity,
+  getMonthlyActivity,
+  exportToCSV
+} from './utils/dataLoader';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts';
+import './App.css';
+
+function App() {
+  const [allData, setAllData] = useState<ProcessedDetection[]>([]);
+  const [filteredData, setFilteredData] = useState<ProcessedDetection[]>([]);
+  const [species, setSpecies] = useState<string[]>([]);
+  const [selectedSpecies, setSelectedSpecies] = useState<string>('');
+  const [startYear, setStartYear] = useState(2023);
+  const [endYear, setEndYear] = useState(2024);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>('');
+  const [activityView, setActivityView] = useState<'hour' | 'month'>('hour');
+
+  useEffect(() => {
+    loadDetectionData()
+      .then(data => {
+        setAllData(data);
+        const uniqueSpecies = getUniqueSpecies(data);
+        setSpecies(uniqueSpecies);
+        if (uniqueSpecies.length > 0) {
+          setSelectedSpecies(uniqueSpecies[0]);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        setError('Failed to load data: ' + err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    let data = allData;
+    if (selectedSpecies) {
+      data = filterBySpecies(data, selectedSpecies);
+    }
+    data = filterByDateRange(data, startYear, endYear);
+    setFilteredData(data);
+  }, [allData, selectedSpecies, startYear, endYear]);
+
+  const activityData = activityView === 'hour' 
+    ? getHourlyActivity(filteredData)
+    : getMonthlyActivity(filteredData);
+
+  const handleDownload = () => {
+    const filename = `Michigan_Mammal_${selectedSpecies.replace(/\s+/g, '_')}_${startYear}-${endYear}.csv`;
+    exportToCSV(filteredData, filename);
+  };
+
+  if (loading) {
+    return (
+      <div className="app-container">
+        <div className="header">
+          <h1>🦌 Michigan Mammal Monitoring Project</h1>
+          <p>Wildlife Camera Trap Detection Data Dashboard</p>
+        </div>
+        <div className="loading">Loading detection data...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="app-container">
+        <div className="header">
+          <h1>🦌 Michigan Mammal Monitoring Project</h1>
+          <p>Wildlife Camera Trap Detection Data Dashboard</p>
+        </div>
+        <div className="error">{error}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-container">
+      <div className="header">
+        <h1>🦌 Michigan Mammal Monitoring Project</h1>
+        <p>Wildlife Camera Trap Detection Data Dashboard</p>
+      </div>
+
+      <div className="container">
+        <div className="controls">
+          <div className="control-group">
+            <label htmlFor="species-select">Select Species of Interest:</label>
+            <select 
+              id="species-select"
+              value={selectedSpecies} 
+              onChange={(e) => setSelectedSpecies(e.target.value)}
+            >
+              {species.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="control-group">
+            <label>Date Range:</label>
+            <div className="date-inputs">
+              <div>
+                <input 
+                  type="number" 
+                  min="2020" 
+                  max="2025" 
+                  value={startYear}
+                  onChange={(e) => setStartYear(parseInt(e.target.value))}
+                  placeholder="Start Year"
+                />
+              </div>
+              <div>
+                <input 
+                  type="number" 
+                  min="2020" 
+                  max="2025" 
+                  value={endYear}
+                  onChange={(e) => setEndYear(parseInt(e.target.value))}
+                  placeholder="End Year"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="stats">
+          <div className="stat-card">
+            <div className="stat-label">Total Detections</div>
+            <div className="stat-value">{filteredData.length.toLocaleString()}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Selected Species</div>
+            <div className="stat-value" style={{ fontSize: '20px' }}>{selectedSpecies}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Date Range</div>
+            <div className="stat-value" style={{ fontSize: '24px' }}>{startYear}-{endYear}</div>
+          </div>
+        </div>
+
+        <div className="chart-container">
+          <div className="chart-header">
+            <h2>Animal Activity</h2>
+            <div>
+              <div className="chart-tabs">
+                <button 
+                  className={`tab-button ${activityView === 'hour' ? 'active' : ''}`}
+                  onClick={() => setActivityView('hour')}
+                >
+                  by Hour
+                </button>
+                <button 
+                  className={`tab-button ${activityView === 'month' ? 'active' : ''}`}
+                  onClick={() => setActivityView('month')}
+                >
+                  by Month
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={activityData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey={activityView === 'hour' ? 'hour' : 'monthName'} 
+                label={{ 
+                  value: activityView === 'hour' ? 'Hour of Day' : 'Month', 
+                  position: 'insideBottom', 
+                  offset: -5 
+                }}
+              />
+              <YAxis label={{ value: 'Detections', angle: -90, position: 'insideLeft' }} />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="count" fill="#18453B" name="Detections" />
+            </BarChart>
+          </ResponsiveContainer>
+          
+          <p style={{ marginTop: '16px', color: '#2d6a4f', fontSize: '14px' }}>
+            This chart displays total detections for {selectedSpecies} {activityView === 'hour' ? 'by hour of the day' : 'by month of the year'} 
+            from {startYear} to {endYear}.
+          </p>
+        </div>
+
+        <div className="map-container">
+          <h2>Detection Locations</h2>
+          <div className="map-placeholder">
+            <p><strong>📍 Map Visualization</strong></p>
+            <p>Showing {filteredData.length} detection locations</p>
+            <small>Interactive map with markers will be displayed here</small>
+            <p style={{ marginTop: '16px', fontSize: '12px' }}>
+              Latitude range: {Math.min(...filteredData.map(d => d.latitude)).toFixed(2)} to {Math.max(...filteredData.map(d => d.latitude)).toFixed(2)}<br/>
+              Longitude range: {Math.min(...filteredData.map(d => d.longitude)).toFixed(2)} to {Math.max(...filteredData.map(d => d.longitude)).toFixed(2)}
+            </p>
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: '32px' }}>
+          <button className="download-button" onClick={handleDownload}>
+            📥 Download Filtered Dataset
+          </button>
+        </div>
+      </div>
+
+      <div className="footer">
+        <p><strong>Michigan Mammal Monitoring Project</strong></p>
+        <p>A collaborative wildlife monitoring initiative</p>
+        <p style={{ marginTop: '16px', fontSize: '14px' }}>
+          Data collected through camera trap monitoring across Michigan
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default App;
