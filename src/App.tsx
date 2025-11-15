@@ -184,11 +184,11 @@ function App() {
       {/* Description and Logos Section */}
       <div className="info-section">
         <div className="info-content">
-          <img src="/snapshot_michigan/cooperative-logo.png" alt="Cooperative Unit Logo" className="info-logo info-logo-left" />
+          <img src={`${import.meta.env.BASE_URL}cooperative-logo.png`} alt="Cooperative Unit Logo" className="info-logo info-logo-left" />
           <p className="project-description">
             The Michigan Mammal Monitoring Project is a camera trapping effort with the goal of collecting and compiling extensive, repeated baseline data regarding the distribution and relative abundance of mammals across the state. These data are collected throughout the year in widely disparate locations and habitats. These data are collected across land ownership including DNR State Game Areas and State Parks, U.S. Fish and Wildlife Refuges, MSU research stations, Military Installations, and National Forests.
           </p>
-          <img src="/snapshot_michigan/msu-logo.png" alt="MSU Logo" className="info-logo info-logo-right" />
+          <img src={`${import.meta.env.BASE_URL}msu-logo.png`} alt="MSU Logo" className="info-logo info-logo-right" />
         </div>
       </div>
 
