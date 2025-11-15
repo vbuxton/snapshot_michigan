@@ -2,9 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ProcessedDetection } from './types';
 import { 
   loadDetectionData, 
-  getUniqueSpecies, 
-  filterBySpecies, 
-  filterByDateRange,
+  getUniqueSpecies,
   getHourlyActivity,
   getMonthlyActivity,
   exportToCSV
@@ -104,7 +102,7 @@ function App() {
       }));
 
   const handleDownload = () => {
-    const filename = `Michigan_Mammal_${selectedSpecies.replace(/\s+/g, '_')}_${dateLabels[dateRange[0]]}-${dateLabels[dateRange[1]]}.csv`.replace(/\s+/g, '_');
+    const filename = `Michigan_Mammal_${selectedSpecies.join('_').replace(/\s+/g, '_')}_${dateLabels[dateRange[0]]}-${dateLabels[dateRange[1]]}.csv`.replace(/\s+/g, '_');
     exportToCSV(filteredData, filename);
   };
 
@@ -118,7 +116,7 @@ function App() {
       });
       
       const link = document.createElement('a');
-      const filename = `Michigan_Mammal_Activity_${activityView}_${selectedSpecies.replace(/\s+/g, '_')}_${dateLabels[dateRange[0]]}-${dateLabels[dateRange[1]]}.png`.replace(/\s+/g, '_');
+      const filename = `Michigan_Mammal_Activity_${activityView}_${selectedSpecies.join('_').replace(/\s+/g, '_')}_${dateLabels[dateRange[0]]}-${dateLabels[dateRange[1]]}.png`.replace(/\s+/g, '_');
       link.download = filename;
       link.href = canvas.toDataURL('image/png');
       link.click();

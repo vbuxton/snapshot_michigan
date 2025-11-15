@@ -33,7 +33,7 @@ export const loadDetectionData = async (): Promise<ProcessedDetection[]> => {
           reject(error);
         }
       },
-      error: (error) => reject(error)
+      error: (error: Error) => reject(error)
     });
   });
 };
