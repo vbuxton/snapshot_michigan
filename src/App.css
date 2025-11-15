@@ -23,7 +23,7 @@ body {
 
 /* Header */
 .app-header {
-  background-image: url('./photos-header.jpg');
+  background-image: url('/snapshot_michigan/photos-header.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
