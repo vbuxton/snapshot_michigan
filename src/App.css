@@ -635,6 +635,42 @@ body {
   .summary-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Fix summary cards for mobile */
+  .summary-cards {
+    grid-template-columns: 1fr;
+    padding: 0 16px;
+    margin: 16px auto;
+    gap: 12px;
+  }
+
+  /* Fix info section with logos */
+  .info-content {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+
+  .info-logo {
+    height: 60px;
+  }
+
+  .project-description {
+    text-align: left;
+  }
+
+  /* Reduce padding on mobile */
+  .main-container {
+    padding: 16px;
+  }
+
+  .app-header {
+    padding: 40px 0;
+  }
+
+  .info-section {
+    padding: 24px 0;
+  }
 }
 
 /* Summary Cards */
