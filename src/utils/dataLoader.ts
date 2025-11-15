@@ -121,7 +121,7 @@ export const getSpeciesDetectionCounts = (data: ProcessedDetection[]) => {
 export const getSpeciesFrequency = (data: ProcessedDetection[]) => {
   const counts = new Map<string, number>();
   data.forEach(d => {
-    counts.set(d.commonName, (counts.get(d.commonName) || 0) + 1);
+    counts.set(d.commonName, (counts.get(d.commonName) || 0) + d.groupSize);
   });
   return Array.from(counts.entries())
     .map(([species, count]) => ({ species, count }))
