@@ -661,6 +661,12 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+.summary-card-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.9;
+}
+
 .summary-card-label {
   font-size: 12px;
   text-transform: uppercase;

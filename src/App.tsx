@@ -197,18 +197,22 @@ function App() {
       {/* Summary Cards */}
       <div className="summary-cards">
         <div className="summary-card">
+          <div className="summary-card-icon">📊</div>
           <div className="summary-card-label">Total Detections</div>
           <div className="summary-card-value">{filteredData.reduce((sum, d) => sum + (d.groupSize || 1), 0).toLocaleString()}</div>
         </div>
         <div className="summary-card">
+          <div className="summary-card-icon">🦌</div>
           <div className="summary-card-label">Species Selected</div>
           <div className="summary-card-value">{selectedSpecies.join(', ')}</div>
         </div>
         <div className="summary-card">
+          <div className="summary-card-icon">📅</div>
           <div className="summary-card-label">Date Range</div>
           <div className="summary-card-value">{dateLabels[dateRange[0]]} - {dateLabels[dateRange[1]]}</div>
         </div>
         <div className="summary-card">
+          <div className="summary-card-icon">📷</div>
           <div className="summary-card-label">Camera Locations</div>
           <div className="summary-card-value">{mapPoints.length}</div>
         </div>
