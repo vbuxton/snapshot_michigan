@@ -179,20 +179,22 @@ function App() {
     <div className="app">
       <header className="app-header">
         <div className="header-content">
-          <div className="header-logo-left">
-            <img src="/cooperative-logo.png" alt="Cooperative Unit Logo" className="header-logo" />
-          </div>
-          <div className="header-text">
-            <h1>Michigan Mammal Monitoring Project</h1>
-            <p>The Michigan Mammal Monitoring Project is a camera trapping effort with the goal of collecting and compiling extensive, repeated baseline data regarding the distribution and relative abundance of mammals across the state. These data are collected throughout the year in widely disparate locations and habitats. These data are collected across land ownership including DNR State Game Areas and State Parks, U.S. Fish and Wildlife Refuges, MSU research stations, Military Installations, and National Forests.</p>
-          </div>
-          <div className="header-logo-right">
-            <img src="/msu-logo.png" alt="MSU Logo" className="header-logo" />
-          </div>
+          <h1>Michigan Mammal Monitoring Project</h1>
         </div>
       </header>
 
-      {/* Summary Cards at Top */}
+      {/* Description and Logos Section */}
+      <div className="info-section">
+        <div className="info-content">
+          <img src="/cooperative-logo.png" alt="Cooperative Unit Logo" className="info-logo info-logo-left" />
+          <p className="project-description">
+            The Michigan Mammal Monitoring Project is a camera trapping effort with the goal of collecting and compiling extensive, repeated baseline data regarding the distribution and relative abundance of mammals across the state. These data are collected throughout the year in widely disparate locations and habitats. These data are collected across land ownership including DNR State Game Areas and State Parks, U.S. Fish and Wildlife Refuges, MSU research stations, Military Installations, and National Forests.
+          </p>
+          <img src="/msu-logo.png" alt="MSU Logo" className="info-logo info-logo-right" />
+        </div>
+      </div>
+
+      {/* Summary Cards */}
       <div className="summary-cards">
         <div className="summary-card">
           <div className="summary-card-label">Total Detections</div>
